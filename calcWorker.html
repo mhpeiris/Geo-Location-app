@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script>
+			window.onload=function()
+			{
+				var R = 6371;
+				
+				var lat1 = 38.898556;
+				var lon1 = -77.037852;
+				var lat2 = 38.897147;
+				var lon2 = -77.043934;
+
+				var dlat = lat2 - lat1;
+				dlat = toRads(dlat);
+				var dlon = lon2 - lon1;
+				dlon = toRads(dlon);
+
+				lat1 = toRads(lat1);
+				lat2 = toRads(lat2);
+				
+				var a = Math.sin(dlat/2) * Math.sin(dlat/2) + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dlon/2) * Math.sin(dlon/2);
+				var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+				var d = R * c;
+				
+				document.getElementById("result").textContent = d;
+			}
+			
+			function toRads(x)
+			{
+				return x * Math.PI/180;
+			}
+		</script>
+	</head>
+	<body>
+		<div id="result"></div>
+	</body>
+</html>

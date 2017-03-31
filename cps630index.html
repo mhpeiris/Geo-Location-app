@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>CPS630 Lab 3</title>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="stylesheet" type="text/css" href="lab3style.css">
+		<link href="https://fonts.googleapis.com/css?family=Russo+One" rel="stylesheet">
+    	<script async defer
+    		src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAap8BQFfF3tFVr3ItOXOn9YVDuAhEmAPE&callback=gMap">
+    	</script>
+		<script type="application/javascript">
+			var currLat;
+			var currLon;
+			var latt;
+			var lonn;
+			var latlngS;
+			var latlngS2;
+
+			window.onload = function()
+			{
+				if(navigator.geolocation)
+				{
+					navigator.geolocation.getCurrentPosition(showPosition);
+				}
+				else
+				{
+					document.getElementById("currLoc").innerHTML = "Geolocation is not supported by this browser.";
+				}
+
+			}
+			
+			function showPosition(position)
+			{
+				currLat = position.coords.latitude;
+				currLon = position.coords.longitude;
+				document.getElementById("currLoc").innerHTML = "Current Latitude: " + currLat ;
+				document.getElementById("currLoc2").innerHTML =  "Current Longitude: " + currLon;
+				gMap()
+			}
+			
+			function gMap()
+			{
+				var geocoder = new google.maps.Geocoder();
+				var centre = new google.maps.LatLng(currLat, currLon);
+				var infowindow = new google.maps.InfoWindow;
+								
+				var currLatS = currLat.toString();
+				var currLonS = currLon.toString();
+				latlngS = currLatS +","+currLonS;
+				
+  				var canvas = document.getElementById("map");
+  				var properties = { center: centre, zoom: 15 };
+  				var map = new google.maps.Map(canvas, properties);
+				document.getElementById('submit1').addEventListener('click', function() {
+          			geocodeLatLng(geocoder, map, infowindow);
+        		});
+				
+				var marker = new google.maps.Marker({position:centre});
+				marker.setMap(map);
+				
+				var geocoder2 = new google.maps.Geocoder();
+				var inputLoc = new google.maps.LatLng(latt,lonn);
+				var infowindow2 = new google.maps.InfoWindow;
+				
+				var lattS = latt.toString();
+				var lonnS = lonn.toString();
+				latlngS2 = lattS +","+lonnS;
+				document.getElementById('submit2').addEventListener('click', function() {
+          			geocodeLatLng2(geocoder2, map, infowindow2);
+        		});
+				
+				var path = new google.maps.Polyline({path: [centre, inputLoc], strokeColor: "#0000FF", strokeOpacity: 0.8, strokeWeight: 2});
+				path.setMap(map);
+				
+			}
+			
+			function geocodeLatLng(geocoder, map, infowindow) {
+				var input = latlngS;
+				var latlngStr = input.split(',', 2);
+				var latlng = {lat: parseFloat(latlngStr[0]), lng: parseFloat(latlngStr[1])};
+				geocoder.geocode({'location': latlng}, function(results, status) {
+					if (status === 'OK') {
+						if (results[1]) {
+							map.setZoom(11);
+							var marker = new google.maps.Marker({
+								position: latlng,
+								map: map,
+								icon: "blue_markerA.png"
+							});
+						infowindow.setContent(results[1].formatted_address);
+						document.getElementById("city").innerHTML = results[1].formatted_address;
+						document.getElementById("submit1").value = "Current";
+						infowindow.open(map, marker);
+						} else {
+							window.alert('No results found');
+						}
+					} else {
+						window.alert('Geocoder failed due to: ' + status);
+					}
+				});
+			}
+
+			function geocodeLatLng2(geocoder, map, infowindow) {
+				var input = latlngS2;
+				var latlngStr = input.split(',', 2);
+				var latlng = {lat: parseFloat(latlngStr[0]), lng: parseFloat(latlngStr[1])};
+				geocoder.geocode({'location': latlng}, function(results, status) {
+					if (status === 'OK') {
+						if (results[1]) {
+							map.setZoom(11);
+							var marker = new google.maps.Marker({
+								position: latlng,
+								map: map
+							});
+						infowindow.setContent(results[1].formatted_address);
+						document.getElementById("city2").innerHTML = results[1].formatted_address;
+						infowindow.open(map, marker);
+						} else {
+							window.alert('No results found');
+						}
+					} else {
+						window.alert('Geocoder failed due to: ' + status);
+					}
+				});
+			}
+			
+			function handleFileSelect(evt) {
+				
+				var latitude = document.getElementById("latitude");
+				var longitude = document.getElementById("longitude");
+				var lat = "";
+				var lon = "";
+				evt.stopPropagation();
+				evt.preventDefault();
+
+				var files = evt.dataTransfer.files; 
+
+				var textType = /text.*/;
+				    for (var i = 0, f; f = files[i]; i++) {
+					if (f.type.match(textType)) {
+					
+					var reader = new FileReader();
+						reader.onload = function(e)
+						{
+							var latlon = reader.result;
+							lat = latlon.substring(0, latlon.indexOf(","));
+							latitude.innerText = "Input Latitude: " + lat;
+							lat = parseFloat(lat)
+							lon = latlon.substring(latlon.indexOf(",")+1,latlon.length);
+							longitude.innerText = "Input Longitude: " + lon;
+							lon = parseFloat(lon);
+							latt = lat;
+							lonn = lon;
+							gMap();
+							calc();
+						}
+						reader.readAsText(f);
+					}
+					else
+					{
+						display.innerText = "File Not Available!";
+					}					
+				}
+			}
+
+			function handleDragOver(evt) {
+				evt.stopPropagation();
+				evt.preventDefault();
+				evt.dataTransfer.dropEffect = 'copy'; 
+			}
+			
+			function calc() {
+				w.postMessage({'currlat':currLat, 'currlon':currLon, 'latt':latt, 'lonn':lonn});
+				startWorker();
+			}
+			
+			var	w = new Worker("webworker.js");
+			
+			function startWorker()
+			{
+				w.addEventListener('message', function(e) { 
+					document.getElementById('distance').textContent = "Distance: " + e.data;
+				}, false);
+			}
+			
+		</script>
+	</head>
+	<body>
+		<section class="dragmap">
+			<div id="drop_zone">Drop Destination Coordinates File Here</div>
+			<div id="map" onload="gMap"></div>
+		</section>
+		<aside class = row>
+			<aside class="col-12 col-m-12 col-m-m-12">
+				<div id="distance"></div>
+			</aside>
+		</aside>
+		<aside class = row>
+			<aside class="col-3 col-m-6 col-m-m-6">
+				<div id="currLoc"></div>
+			</aside>
+			<aside class="col-3 col-m-6 col-m-m-6">
+				<div id="currLoc2"></div>
+			</aside>
+			<aside class="col-1 col-m-6 currCity col-m-m-12">	
+				<input id="submit1" type="button" value="Current Location">
+			</aside>
+			<aside class="col-5 col-m-6 col-m-m-12">
+				<div id="city"></div>
+			</aside>
+		</aside>
+		<aside class = row>
+			<aside class="col-3 col-m-6 col-m-m-6">
+				<div id="latitude"></div>
+			</aside>
+			<aside class="col-3 col-m-6 col-m-m-6">
+				<div id="longitude"></div>
+			</aside>
+			<aside class="col-1 col-m-6 col-m-m-12">
+				<input id="submit2" type="button" value="Destination">
+			</aside>
+			<aside class="col-5 col-m-6 col-m-m-12">
+				<div id="city2"></div>
+			</aside>
+		</aside>
+		<footer>
+			<p>Mahathelge Hareen Peiris, 500552563</p>
+		</footer>
+		<script>
+		  var dropZone = document.getElementById('drop_zone');
+		  dropZone.addEventListener('dragover', handleDragOver, false);
+		  dropZone.addEventListener('drop', handleFileSelect, false);
+		</script>
+	</body>
+</html>
